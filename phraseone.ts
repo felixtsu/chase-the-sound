@@ -4,8 +4,8 @@ namespace phraseone {
     let currentTone: music.Melody
     let texts: string[]
     let volumeOverride: boolean = false
-    // let octave = ["C", "D", "E", "F", "G", "A", "B", "C5"]
-    let octave = ["C", "D"]
+    let octave = ["C", "D", "E", "F", "G", "A", "B", "C5"]
+    // let octave = ["C", "D"]
     let volume = 0
     let distance = 0
     let traversedRoom = 0
