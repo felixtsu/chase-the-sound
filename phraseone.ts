@@ -139,7 +139,19 @@ namespace phraseone {
         })
         let currentTone: music.Melody = null
 
-        game.onUpdateInterval(100, () => {
+        // game.onUpdateInterval(100, () => {
+        //     if (volumeOverride) {
+        //         return
+        //     }
+        //     if (currentRoomIndex < octave.length - 1) {
+        //         let target = getExitLocation(exitSequence[currentRoomIndex])
+        //         distance = Math.sqrt((target.x - hero.x) ** 2 + (target.y - hero.y) ** 2) / 16
+        //         volume = 10 + (15 - distance) ** 3 / 2744 * 85
+        //         // console.log(volume)
+        //         music.setVolume(volume)
+        //     }
+        // })
+        registerSoundHandler(() => {
             if (volumeOverride) {
                 return
             }

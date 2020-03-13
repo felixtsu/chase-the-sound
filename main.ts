@@ -25,6 +25,24 @@ namespace myTiles {
         . . . . . . . . . . . . . . . .
     `
 }
+
+function disablePlayerControl() {
+    controller.moveSprite(hero, 0, 0)
+}
+
+function enablePlayerControl() {
+    controller.moveSprite(hero)
+}
+
+
+let soundHandlerHolder = [function() {}]
+function registerSoundHandler(handler:() =>void) {
+    soundHandlerHolder[0] = handler
+} 
+game.onUpdateInterval(100, function () {
+    soundHandlerHolder[0]()
+})
+
 let statue = sprites.create(img`
     . . . . . . . . . . . . . . . .
     . . . . . . . d d d . . . . . .
@@ -105,5 +123,4 @@ tiles.placeOnTile(statue, tiles.getTileLocation(7, 7))
 tiles.placeOnTile(hero, tiles.getTileLocation(7, 9))
 scene.cameraFollowSprite(hero)
 
-phrasetwo.init()
 phraseone.startTrial()
