@@ -1,6 +1,8 @@
 // Add your code here
 namespace phrasetwo {
 
+    let soundInControl = false
+
     class TrialStatue {
         vx: number
         vy: number
@@ -70,10 +72,25 @@ namespace phrasetwo {
             })
             this.sprite.vx = 0
             this.sprite.vy = 0
-
+            tiles.placeOnTile(this.sprite, this.location)
             pause(200)
             this.sprite.setFlag(SpriteFlag.Ghost, false)
             this.stop()
+        }
+
+        backToCenter() {
+            const CENTER_LOCATION = tiles.getTileLocation(7, 7)
+            scene.cameraFollowSprite(this.sprite)
+            this.sprite.vx = -this.vx * 2
+            this.sprite.vy = -this.vy * 2
+
+            pauseUntil(() => {
+                return Math.abs(this.sprite.x - CENTER_LOCATION.x) < 5
+            })
+
+            this.sprite.vx = 0
+            this.sprite.vy = 0
+            tiles.placeOnTile(this.sprite, CENTER_LOCATION)
         }
 
         destroy() {
@@ -112,7 +129,7 @@ namespace phrasetwo {
 
     function clearScene() {
         disablePlayerControl()
-        statues.forEach((statue:TrialStatue, index:number) => {
+        statues.forEach((statue: TrialStatue, index: number) => {
             scene.cameraFollowSprite(statue.sprite)
             statue.destroy()
         })
@@ -127,7 +144,71 @@ namespace phrasetwo {
         ]
     }
 
-    export function prepareConsonantTrial() {
+    function restartTrial() {
+        disablePlayerControl()
+
+        statues.forEach(function (statue: TrialStatue, index: number) {
+            statue.backToCenter()
+            statue.stop()
+        })
+
+        statue = statues[3].sprite // magic trick, for display,  avoid another creation.
+
+        // destroy the first 3 statues
+        statues.forEach(function (statue: TrialStatue, index: number) {
+            if (index != 3) {
+                statue.destroy()
+            }
+        })
+
+        setupTrialStatues()
+
+        // place hero on 7,9
+        tiles.placeOnTile(hero, tiles.getTileLocation(7, 9))
+
+        scene.cameraFollowSprite(hero)
+        enablePlayerControl()
+    }
+
+    function setupTrialStatues() {
+        soundInControl = true
+        initTrialStatueSettings()
+        for (let index = 0; index < 4; index++) {
+            if (index == 3) {
+                statue.destroy()
+            }
+            let statueParam = Math.pickRandom(candidate)
+            candidate.removeElement(statueParam)
+            let trialStatue = new TrialStatue(index % 2 == 0 ? -32 : 32, index < 2 ? -32 : 32,
+                tiles.getTileLocation(index % 2 == 0 ? 3 : 11, index < 2 ? 3 : 11),
+                statueParam.tones, statueParam.spriteKind);
+            statues.push(trialStatue)
+            trialStatue.show()
+        }
+        soundInControl = false
+    }
+
+    function shutdownStairs() {
+        let northStairTile = tiles.getTileLocation(7, 0)
+        tiles.setTileAt(northStairTile, sprites.dungeon.purpleOuterNorth1)
+        tiles.setWallAt(northStairTile, true)
+        console.log(northStairTile.x + ',' + northStairTile.y)
+        console.log(tiles.getTileImage(northStairTile))
+
+        let southStairTile = tiles.getTileLocation(7, 14)
+        tiles.setTileAt(southStairTile, sprites.dungeon.purpleOuterSouth1)
+        tiles.setWallAt(southStairTile, true)
+
+        let eastStairTile = tiles.getTileLocation(14, 7)
+        tiles.setTileAt(eastStairTile, sprites.dungeon.purpleOuterEast0)
+        tiles.setWallAt(eastStairTile, true)
+
+        let westStairTile = tiles.getTileLocation(0, 7)
+        tiles.setTileAt(westStairTile, sprites.dungeon.purpleOuterWest0)
+        tiles.setWallAt(westStairTile, true)
+    }
+
+    function phraseTwoEntrance() {
         pause(200)
 
         scene.cameraFollowSprite(statue)
@@ -207,22 +288,18 @@ namespace phrasetwo {
         }
         pause(1000)
 
+        shutdownStairs()
+
         game.splash("You are here.")
         game.splash("Now, listen, the sound will once again guide you.")
+    }
 
-        initTrialStatueSettings()
-        for (let index = 0; index < 4; index++) {
-            if (index == 3) {
-                statue.destroy()
-            }
-            let statueParam = Math.pickRandom(candidate)
-            candidate.removeElement(statueParam)
-            let trialStatue = new TrialStatue(index % 2 == 0 ? -30 : 30, index < 2 ? -30 : 30,
-                tiles.getTileLocation(index % 2 == 0 ? 3 : 11, index < 2 ? 3 : 10),
-                statueParam.tones, statueParam.spriteKind);
-            statues.push(trialStatue)
-            trialStatue.show()
-        }
+    export function prepareConsonantTrial() {
+        phraseTwoEntrance()
+
+        setupTrialStatues()
+
+        scene.cameraFollowSprite(hero)
 
         sprites.onOverlap(SpriteKind.Player, SpriteKind.TrueStatue, function (sprite: Sprite, otherSprite: Sprite) {
             const ordeOfHappiness = new music.Melody("E:4 E:4 F:4 G:4 G:4 F:4 E:4 D:4 C:4 C:4 D:4 E:4 D:6 C:2 C:4")
@@ -238,14 +315,21 @@ namespace phrasetwo {
             game.splash("Goddess:Harmony will guide you.")
 
             //TODO shuffle the statues, restart again
-            // game.splash("Goddess:Find me, the true me.")
+            game.splash("Goddess:Find me, the true me.")
+            music.stopAllSounds()
+            soundInControl = true
+            control.runInParallel(restartTrial)
         })
 
         registerSoundHandler(function () {
+            if (soundInControl) {
+                return
+            }
+
             //1. find nearest statue
             let nearestIndex = 0, nearestDistance = 9999999999
-            statues.forEach( (statue: TrialStatue, index: number) => {
-                let distance = (hero.x - statue.sprite.x) **2 + (hero.y - statue.sprite.y)**2
+            statues.forEach((statue: TrialStatue, index: number) => {
+                let distance = (hero.x - statue.sprite.x) ** 2 + (hero.y - statue.sprite.y) ** 2
                 if (distance < nearestDistance) {
                     nearestDistance = distance
                     nearestIndex = index
@@ -253,17 +337,17 @@ namespace phrasetwo {
             })
             //2. stop not nearest statue
             statues.forEach(function (statue: TrialStatue, index: number) {
-                if(index != nearestIndex) {
+                if (index != nearestIndex) {
                     statue.stop()
                 }
             })
             //3. set volume by distance 
-            let volume = Math.abs(4096 - nearestDistance )/ 4096 * 90
+            let volume = Math.abs(4096 - nearestDistance) / 4096 * 90
             music.setVolume(volume)
             statues[nearestIndex].play()
         })
 
-        scene.cameraFollowSprite(hero)
+
 
     }
 }

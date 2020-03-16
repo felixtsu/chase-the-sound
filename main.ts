@@ -28,9 +28,11 @@ namespace myTiles {
 
 function disablePlayerControl() {
     controller.moveSprite(hero, 0, 0)
+    hero.setFlag(SpriteFlag.Ghost, true)
 }
 
 function enablePlayerControl() {
+    hero.setFlag(SpriteFlag.Ghost, false)
     controller.moveSprite(hero)
 }
 
